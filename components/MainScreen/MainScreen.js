@@ -22,6 +22,30 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'white',
   },
+
+  box: {
+    width: '19%',
+    height: '100%',
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    // borderWidth: 1,
+    borderColor: 'black',
+  },
+  boxNumber: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+
+  row: {
+    // backgroundColor: 'red',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    height: '20%',
+    borderColor: 'black',
+    borderWidth: 1,
+  },
+
   time: {
     color: 'white',
     fontSize: 20,
