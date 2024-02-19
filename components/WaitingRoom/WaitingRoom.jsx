@@ -1,11 +1,23 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {View, Text, TouchableOpacity} from 'react-native';
 import LottieView from 'lottie-react-native';
 import styles from './Waitingroom.js';
 
-function WaitingRoom({navigation}) {
+function WaitingRoom({navigation, route}) {
+  const {socket, userName, roomId, isAdmin, userInfo} = route.params;
+  const [joinedUsers, setJoinedUsers] = useState([]);
+
+  useEffect(() => {
+    setJoinedUsers(userInfo);
+
+    socket.on('startGame', () => {
+      console.log('I am inside the waiting room and the roomid is ', roomId);
+      navigation.navigate('MainScreen', {socket, userName, roomId, isAdmin});
+    });
+  }, [socket]);
+
   const handleCancel = () => {
-    console.log('Cancel Button pressed');
+    console.log('Cancel button pressed');
     navigation.navigate('FirstScreen');
   };
   return (
@@ -19,12 +31,14 @@ function WaitingRoom({navigation}) {
         loop
       />
 
-      <Text style={styles.joinedText}>JOINED 0/3</Text>
+      <Text style={styles.joinedText}>JOINED {joinedUsers.length}/3</Text>
 
       <View style={styles.playersContainer}>
-        <Text style={styles.playerText}>ANKIT</Text>
-        <Text style={styles.playerText}>NIKHIL</Text>
-        <Text style={styles.playerText}>KUMAR</Text>
+        {joinedUsers.map((element, index) => (
+          <Text key={index} style={styles.playerText}>
+            {element.userName}
+          </Text>
+        ))}
       </View>
 
       <TouchableOpacity onPress={handleCancel} style={styles.button}>

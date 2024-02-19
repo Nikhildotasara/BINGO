@@ -1,14 +1,23 @@
 import React, {useEffect, useState} from 'react';
-import {View, Text, TouchableOpacity} from 'react-native';
+import {View, Text, TouchableOpacity, Image} from 'react-native';
 import styles from './MainScreen.js';
+import Gold from './../../assests/king.png';
+import Silver from './../../assests/silver.png';
 
-function MainScreen() {
+function MainScreen({route}) {
   const [timerRunning, setTimerRunning] = useState(true);
   const [currentTime, setCurrentTime] = useState(10);
   const [currentFilledNumber, setCurrentFilledNumber] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
-  const [isCompletelyFilled, setIsCompletelyFilled] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+
+  const [usersArray, setUsersArray] = useState([]);
+
+  const [turn, setTurn] = useState();
+
+  const {socket, userName, roomId, isAdmin} = route.params;
+
+  const [winners, setWinners] = useState([]);
 
   const [set, setSet] = useState([
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
@@ -18,14 +27,12 @@ function MainScreen() {
   const [board, setBoard] = useState(() => {
     return Array(5)
       .fill()
-      .map(() => Array(5).fill());
+      .map(() =>
+        Array(5)
+          .fill()
+          .map(() => ({isChecked: false, value: ''})),
+      );
   });
-
-  const [filledData, setFilledData] = useState(
-    Array(5)
-      .fill(false)
-      .map(() => Array(5).fill(false)),
-  );
 
   useEffect(() => {
     if (timerRunning) {
@@ -37,13 +44,56 @@ function MainScreen() {
           } else {
             setTimerRunning(false);
             handleFillingDelay();
+            if (isAdmin) {
+              socket.emit('realGameStart', roomId);
+            }
+
             return 0;
           }
         });
       }, 1000);
       return () => clearInterval(intervalId);
     }
+
+    socket.on('broadcastWin', message => {
+      console.log('The index of the user won is ', message);
+      console.log(usersArray);
+      console.log(`The winner is ${usersArray[message].userName}`);
+    });
+
+    socket.on('numberPressed', message => {
+      setTurn(message.turn);
+      const updatedBoard = [...board];
+
+      for (let i = 0; i < 5; i++) {
+        for (let j = 0; j < 5; j++) {
+          if (updatedBoard[i][j].value == message.numberPressed) {
+            if (message.socketId == socket.id) {
+              updatedBoard[i][j].value = 'YOU';
+              updatedBoard[i][j].isChecked = true;
+            } else {
+              updatedBoard[i][j].value = message.sender;
+              updatedBoard[i][j].isChecked = true;
+            }
+            setBoard(updatedBoard);
+
+            const win = checkForWin();
+            if (win) {
+              console.log('win');
+              socket.emit('win', roomId);
+            }
+            return;
+          }
+        }
+      }
+    });
   }, [timerRunning]);
+
+  socket.on('sendInitialData', initialData => {
+    const updatedData = initialData.userInfo;
+    setUsersArray(updatedData);
+    setTurn(initialData.turn);
+  });
 
   const updateCurrentFilledNumber = () => {
     const updatedCurrentFilledNumber = currentFilledNumber + 1;
@@ -52,12 +102,11 @@ function MainScreen() {
   };
 
   const updateFilledNumber = (row, column, updateCurrentFilledNumber) => {
-    if (!filledData[row][column]) {
+    if (board[row][column].value === '') {
       const number = updateCurrentFilledNumber();
-      board[row][column] = number;
-      filledData[row][column] = true;
+      board[row][column].value = number;
       set.splice(set.indexOf(number), 1);
-      return board[row][column];
+      return board[row][column].value;
     } else {
       return;
     }
@@ -65,12 +114,17 @@ function MainScreen() {
 
   const handleBoxPressed = (rowIndex, columnIndex) => {
     if (gameStarted) {
-      console.log('Yes the game stated');
-      console.log(board);
-      if (board[rowIndex][columnIndex].isChecked === false) {
-        (board[rowIndex][columnIndex].isChecked = true),
-          (board[rowIndex][columnIndex].value = 'YOU');
-        console.log(board);
+      const numberPressed = board[rowIndex][columnIndex];
+      const message = {
+        sender: userName,
+        numberPressed: numberPressed.value,
+        roomId: roomId,
+      };
+
+      if (!numberPressed.isChecked) {
+        console.log(message);
+        socket.emit('numberPressed', message);
+        const updatedBoard = [...board];
       }
     } else {
       updateFilledNumber(rowIndex, columnIndex, updateCurrentFilledNumber);
@@ -80,18 +134,65 @@ function MainScreen() {
   const handleFillingDelay = () => {
     for (let i = 0; i < 5; i++) {
       for (let j = 0; j < 5; j++) {
-        if (typeof board[i][j] === 'undefined') {
+        if (board[i][j].value === '') {
           const randomIndex = Math.floor(Math.random() * set.length);
           const randomNumber = set[randomIndex];
-          board[i][j] = randomNumber;
-          filledData[i][j] = true;
+          board[i][j].value = randomNumber;
           set.splice(set.indexOf(randomNumber), 1);
         } else {
-          console.log('I am at else ');
         }
       }
     }
     setGameStarted(true);
+  };
+
+  const checkForWin = () => {
+    let countX = 0;
+    let countY = 0;
+    let countZ = 0;
+    for (let i = 0; i < 5; i++) {
+      let isCrossed = true;
+      for (let j = 0; j < 5; j++) {
+        if (!board[i][j].isChecked) {
+          isCrossed = false;
+          break;
+        }
+      }
+
+      if (isCrossed) countX++;
+    }
+
+    for (let i = 0; i < 5; i++) {
+      let isCrossed = true;
+      for (let j = 0; j < 5; j++) {
+        if (!board[j][i].isChecked) {
+          isCrossed = false;
+          break;
+        }
+      }
+
+      if (isCrossed) countY++;
+    }
+
+    let isCrossed = true;
+    for (let row = 0, col = 0; row <= 4; row++, col++) {
+      if (!board[row][col].isChecked) {
+        isCrossed = false;
+        break;
+      }
+    }
+    if (isCrossed) countZ++;
+
+    isCrossed = true;
+    for (let row = 0, col = 4; row <= 4; row++, col--) {
+      if (!board[row][col].isChecked) {
+        isCrossed = false;
+        break;
+      }
+    }
+    if (isCrossed) countZ++;
+
+    return countX + countY + countZ >= 5;
   };
 
   return (
@@ -110,16 +211,15 @@ function MainScreen() {
           <View key={rowIndex} style={styles.row}>
             {row.map((box, columnIndex) => (
               <TouchableOpacity
-                boxFilled={false}
-                boxChecked={false}
                 key={columnIndex}
+                disabled={board[rowIndex][columnIndex].isChecked}
                 onPress={() => {
                   handleBoxPressed(rowIndex, columnIndex);
                   key = {columnIndex};
                 }}
                 style={styles.box}>
                 <Text style={styles.boxNumber}>
-                  {board[rowIndex][columnIndex]}
+                  {board[rowIndex][columnIndex].value}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -128,15 +228,19 @@ function MainScreen() {
       </View>
 
       <View style={styles.userContainer}>
-        <TouchableOpacity style={styles.playerButton}>
-          <Text style={styles.playerText}>NIKHIL</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.playerButton}>
-          <Text style={styles.playerText}>ANKIT</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.playerButton}>
-          <Text style={styles.playerText}>KUMAR</Text>
-        </TouchableOpacity>
+        {usersArray.map((element, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[
+              styles.playerButton,
+              index === turn - 1 ? styles.activeTurn : null,
+            ]}>
+            <View style={styles.userDetailContainer}>
+              <Text style={styles.playerText}>{element.userName}</Text>
+              <Image style={[styles.medalImage]} source={Gold} />
+            </View>
+          </TouchableOpacity>
+        ))}
       </View>
     </View>
   );

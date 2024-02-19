@@ -1,15 +1,76 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {View, Text, TextInput, TouchableOpacity} from 'react-native';
 import styles from './JoinRoom.js';
+import io from 'socket.io-client';
 
-function JoinRoom({navigation}) {
+import Snackbar from 'react-native-snackbar';
+
+function JoinRoom({navigation, route}) {
+  const [roomId, setRoomId] = useState();
+  const [socket, setSocket] = useState();
+  const {userName} = route.params;
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    const socket = io('http://192.168.64.246:5000');
+
+    setSocket(socket);
+
+    socket.on('connect', () => {
+      console.log('Connection Established with roomId', socket.id);
+      // setSocket(socket);
+    });
+
+    socket.on('joinedSuccessfully', message => {
+      console.log(message);
+
+      console.log(
+        'I am inside the joinroom and sending the roomId ',
+        message.roomId,
+      );
+      setRoomId(message.roomId);
+
+      const userInfo = message.infoToSend;
+      const roomId = message.roomId;
+
+      navigation.navigate('WaitingRoom', {
+        socket,
+        userName,
+        roomId,
+        isAdmin,
+        userInfo,
+      });
+    });
+
+    socket.on('roomNotFound', () => {
+      console.log('The roomId is ', roomId);
+      console.log('Room not found');
+
+      Snackbar.show({
+        text: 'Room not found',
+        duration: Snackbar.LENGTH_SHORT,
+      });
+    });
+
+    socket.on('roomFull', () => {
+      console.log('Room already filled');
+
+      Snackbar.show({
+        text: 'Room already full',
+        duration: Snackbar.LENGTH_SHORT,
+      });
+    });
+  }, []);
+
   const handleJoin = () => {
-    console.log('Join button pressed');
-    navigation.navigate('WaitingRoom');
+    const message = {
+      userName: userName,
+      roomId: roomId,
+    };
+    socket.emit('joinRoom', message);
   };
 
   const handleCancel = () => {
-    console.log('Cancel button pressed');
+    socket.disconnect();
     navigation.navigate('FirstScreen');
   };
   return (
@@ -21,6 +82,11 @@ function JoinRoom({navigation}) {
           <Text style={styles.roomIdText}>ROOM ID :</Text>
           <TextInput
             style={styles.inputContainer}
+            onChangeText={text => {
+              console.log('The roomid i am entering', text);
+              setRoomId(text);
+              // console.log(roomId);
+            }}
             placeholderTextColor={'white'}
             placeholder="ENTER THE ROOM ID"
           />

@@ -34,6 +34,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     borderBottomWidth: 2,
     borderBottomColor: 'white',
+    color: 'white',
   },
 
   buttonContainer: {

@@ -1,15 +1,14 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {View, Text, TextInput, TouchableOpacity} from 'react-native';
 import styles from './FirstScreen.js';
 
 function FirstScreen({navigation}) {
+  const [userName, setUserName] = useState('Player');
   const handleCreateRoom = () => {
-    console.log('Create Room Pressed');
-    navigation.navigate('CreateRoom');
+    navigation.navigate('CreateRoom', {userName});
   };
   const handleJoinRoom = () => {
-    console.log('Join Room Pressed');
-    navigation.navigate('JoinRoom');
+    navigation.navigate('JoinRoom', {userName});
   };
 
   return (
@@ -21,6 +20,9 @@ function FirstScreen({navigation}) {
           style={styles.userNameInput}
           placeholderTextColor={'white'}
           placeholder="Enter Your Name"
+          onChangeText={text => {
+            setUserName(text);
+          }}
         />
 
         <View style={styles.buttonContainer}>

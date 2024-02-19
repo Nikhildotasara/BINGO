@@ -35,6 +35,7 @@ const styles = StyleSheet.create({
   boxNumber: {
     fontSize: 20,
     fontWeight: '700',
+    color: 'black',
   },
 
   row: {
@@ -74,6 +75,21 @@ const styles = StyleSheet.create({
   playerText: {
     color: 'white',
     fontSize: 20,
+  },
+
+  activeTurn: {
+    backgroundColor: 'red',
+  },
+  userDetailContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  medalImage: {
+    objectFit: 'contain',
+    height: '50%',
+    width: '50%',
   },
 });
 
