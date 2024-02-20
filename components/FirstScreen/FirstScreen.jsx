@@ -10,6 +10,9 @@ function FirstScreen({navigation}) {
   const handleJoinRoom = () => {
     navigation.navigate('JoinRoom', {userName});
   };
+  const handleWithComputer = () => {
+    navigation.navigate('JoinRoom', {userName});
+  };
 
   return (
     <View style={styles.container}>
@@ -33,6 +36,11 @@ function FirstScreen({navigation}) {
           </TouchableOpacity>
           <TouchableOpacity onPress={handleJoinRoom} style={styles.joinButton}>
             <Text style={styles.buttonText}>JOIN ROOM</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleWithComputer}
+            style={styles.joinButton}>
+            <Text style={styles.buttonText}>COMPUTER</Text>
           </TouchableOpacity>
         </View>
       </View>

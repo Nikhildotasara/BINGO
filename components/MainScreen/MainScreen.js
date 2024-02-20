@@ -78,12 +78,12 @@ const styles = StyleSheet.create({
   },
 
   activeTurn: {
-    backgroundColor: 'red',
+    backgroundColor: 'orange',
   },
   userDetailContainer: {
     width: '100%',
     height: '100%',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
   },
   medalImage: {

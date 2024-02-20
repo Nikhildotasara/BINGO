@@ -34,7 +34,7 @@ const styles = StyleSheet.create({
     height: '10%',
   },
   createButton: {
-    width: '45%',
+    width: '30%',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
   },
   joinButton: {
-    width: '45%',
+    width: '30%',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,

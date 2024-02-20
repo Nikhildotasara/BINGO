@@ -11,13 +11,11 @@ function WaitingRoom({navigation, route}) {
     setJoinedUsers(userInfo);
 
     socket.on('startGame', () => {
-      console.log('I am inside the waiting room and the roomid is ', roomId);
       navigation.navigate('MainScreen', {socket, userName, roomId, isAdmin});
     });
   }, [socket]);
 
   const handleCancel = () => {
-    console.log('Cancel button pressed');
     navigation.navigate('FirstScreen');
   };
   return (

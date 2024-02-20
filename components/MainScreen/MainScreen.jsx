@@ -4,21 +4,19 @@ import styles from './MainScreen.js';
 import Gold from './../../assests/king.png';
 import Silver from './../../assests/silver.png';
 
+import Snackbar from 'react-native-snackbar';
+
 function MainScreen({route}) {
   const [timerRunning, setTimerRunning] = useState(true);
   const [currentTime, setCurrentTime] = useState(10);
   const [currentFilledNumber, setCurrentFilledNumber] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
-
   const [usersArray, setUsersArray] = useState([]);
-
+  const [winners, setWinners] = useState([]);
   const [turn, setTurn] = useState();
+  const [won, setWon] = useState(false);
 
   const {socket, userName, roomId, isAdmin} = route.params;
-
-  const [winners, setWinners] = useState([]);
-
   const [set, setSet] = useState([
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
     22, 23, 25, 24,
@@ -47,53 +45,63 @@ function MainScreen({route}) {
             if (isAdmin) {
               socket.emit('realGameStart', roomId);
             }
-
             return 0;
           }
         });
       }, 1000);
       return () => clearInterval(intervalId);
     }
-
-    socket.on('broadcastWin', message => {
-      console.log('The index of the user won is ', message);
-      console.log(usersArray);
-      console.log(`The winner is ${usersArray[message].userName}`);
-    });
-
-    socket.on('numberPressed', message => {
-      setTurn(message.turn);
-      const updatedBoard = [...board];
-
-      for (let i = 0; i < 5; i++) {
-        for (let j = 0; j < 5; j++) {
-          if (updatedBoard[i][j].value == message.numberPressed) {
-            if (message.socketId == socket.id) {
-              updatedBoard[i][j].value = 'YOU';
-              updatedBoard[i][j].isChecked = true;
-            } else {
-              updatedBoard[i][j].value = message.sender;
-              updatedBoard[i][j].isChecked = true;
-            }
-            setBoard(updatedBoard);
-
-            const win = checkForWin();
-            if (win) {
-              console.log('win');
-              socket.emit('win', roomId);
-            }
-            return;
-          }
-        }
-      }
-    });
   }, [timerRunning]);
 
-  socket.on('sendInitialData', initialData => {
+  const handleBroadcastWin = message => {
+    const winnerInfo = usersArray[message];
+    const updatedWinners = [...winners, winnerInfo];
+    setWinners(updatedWinners);
+  };
+
+  const handleNumberPressed = message => {
+    setTurn(message.turn);
+    const updatedBoard = [...board];
+
+    for (let i = 0; i < 5; i++) {
+      for (let j = 0; j < 5; j++) {
+        if (updatedBoard[i][j].value == message.numberPressed) {
+          if (message.socketId == socket.id) {
+            updatedBoard[i][j].value = 'YOU';
+            updatedBoard[i][j].isChecked = true;
+          } else {
+            updatedBoard[i][j].value = message.sender;
+            updatedBoard[i][j].isChecked = true;
+          }
+          setBoard(updatedBoard);
+
+          const win = checkForWin();
+          if (win) {
+            socket.emit('win', roomId);
+          }
+          return;
+        }
+      }
+    }
+  };
+
+  const handleInitialData = initialData => {
     const updatedData = initialData.userInfo;
     setUsersArray(updatedData);
     setTurn(initialData.turn);
-  });
+  };
+
+  useEffect(() => {
+    socket.on('broadcastWin', handleBroadcastWin);
+    socket.on('numberPressed', handleNumberPressed);
+    socket.on('sendInitialData', handleInitialData);
+
+    return () => {
+      socket.off('broadcastWin', handleBroadcastWin);
+      socket.off('numberPressed', handleNumberPressed);
+      socket.off('sendInitialData', handleInitialData);
+    };
+  }, [usersArray]);
 
   const updateCurrentFilledNumber = () => {
     const updatedCurrentFilledNumber = currentFilledNumber + 1;
@@ -115,14 +123,22 @@ function MainScreen({route}) {
   const handleBoxPressed = (rowIndex, columnIndex) => {
     if (gameStarted) {
       const numberPressed = board[rowIndex][columnIndex];
+
+      if (won) {
+        Snackbar.show({
+          text: 'YOU ALREADY WON',
+          duration: Snackbar.LENGTH_SHORT,
+        });
+      }
+
       const message = {
         sender: userName,
         numberPressed: numberPressed.value,
         roomId: roomId,
+        won: won,
       };
 
       if (!numberPressed.isChecked) {
-        console.log(message);
         socket.emit('numberPressed', message);
         const updatedBoard = [...board];
       }
@@ -228,19 +244,36 @@ function MainScreen({route}) {
       </View>
 
       <View style={styles.userContainer}>
-        {usersArray.map((element, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[
-              styles.playerButton,
-              index === turn - 1 ? styles.activeTurn : null,
-            ]}>
-            <View style={styles.userDetailContainer}>
-              <Text style={styles.playerText}>{element.userName}</Text>
-              <Image style={[styles.medalImage]} source={Gold} />
+        {usersArray.map((element, index) => {
+          const winnerIndex = winners.findIndex(
+            winner => winner.socketId === element.socketId,
+          );
+
+          let imageSource;
+          if (winnerIndex === 0) {
+            imageSource = Gold;
+          } else if (winnerIndex === 1) {
+            imageSource = Silver;
+          } else {
+            imageSource = null; // No image
+          }
+
+          return (
+            <View
+              key={index}
+              style={[
+                styles.playerButton,
+                index === turn - 1 ? styles.activeTurn : null,
+              ]}>
+              <View style={styles.userDetailContainer}>
+                <Text style={styles.playerText}>{element.userName}</Text>
+                {imageSource && (
+                  <Image style={[styles.medalImage]} source={imageSource} />
+                )}
+              </View>
             </View>
-          </TouchableOpacity>
-        ))}
+          );
+        })}
       </View>
     </View>
   );

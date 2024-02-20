@@ -11,7 +11,7 @@ function JoinRoom({navigation, route}) {
   const {userName} = route.params;
   const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
-    const socket = io('http://192.168.64.246:5000');
+    const socket = io('http://192.168.77.246:5000');
 
     setSocket(socket);
 
@@ -21,12 +21,6 @@ function JoinRoom({navigation, route}) {
     });
 
     socket.on('joinedSuccessfully', message => {
-      console.log(message);
-
-      console.log(
-        'I am inside the joinroom and sending the roomId ',
-        message.roomId,
-      );
       setRoomId(message.roomId);
 
       const userInfo = message.infoToSend;
@@ -42,9 +36,6 @@ function JoinRoom({navigation, route}) {
     });
 
     socket.on('roomNotFound', () => {
-      console.log('The roomId is ', roomId);
-      console.log('Room not found');
-
       Snackbar.show({
         text: 'Room not found',
         duration: Snackbar.LENGTH_SHORT,
@@ -52,8 +43,6 @@ function JoinRoom({navigation, route}) {
     });
 
     socket.on('roomFull', () => {
-      console.log('Room already filled');
-
       Snackbar.show({
         text: 'Room already full',
         duration: Snackbar.LENGTH_SHORT,
@@ -83,9 +72,7 @@ function JoinRoom({navigation, route}) {
           <TextInput
             style={styles.inputContainer}
             onChangeText={text => {
-              console.log('The roomid i am entering', text);
               setRoomId(text);
-              // console.log(roomId);
             }}
             placeholderTextColor={'white'}
             placeholder="ENTER THE ROOM ID"
