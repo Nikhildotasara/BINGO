@@ -13,7 +13,7 @@ function CreateRoom({navigation, route}) {
   // Currently whenver the user is coming to this screen a new socket connection is establsihed.We can stop that but since we are not thinking about that scale so going with the flow...
 
   useEffect(() => {
-    const socket = io('http://192.168.77.246:5000');
+    const socket = io('http://192.168.64.246:5000');
     socket.on('connect', () => {
       console.log(socket.id);
       setSocket(socket);

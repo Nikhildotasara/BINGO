@@ -78,6 +78,7 @@ function MainScreen({route}) {
           const win = checkForWin();
           if (win) {
             socket.emit('win', roomId);
+            setWon(true);
           }
           return;
         }
@@ -91,15 +92,21 @@ function MainScreen({route}) {
     setTurn(initialData.turn);
   };
 
+  const handleGameEnded = () => {
+    console.log('Game ended now');
+  };
+
   useEffect(() => {
     socket.on('broadcastWin', handleBroadcastWin);
     socket.on('numberPressed', handleNumberPressed);
     socket.on('sendInitialData', handleInitialData);
+    socket.on('gameEnded', handleGameEnded);
 
     return () => {
       socket.off('broadcastWin', handleBroadcastWin);
       socket.off('numberPressed', handleNumberPressed);
       socket.off('sendInitialData', handleInitialData);
+      socket.off('gameEnded', handleGameEnded);
     };
   }, [usersArray]);
 
@@ -123,13 +130,6 @@ function MainScreen({route}) {
   const handleBoxPressed = (rowIndex, columnIndex) => {
     if (gameStarted) {
       const numberPressed = board[rowIndex][columnIndex];
-
-      if (won) {
-        Snackbar.show({
-          text: 'YOU ALREADY WON',
-          duration: Snackbar.LENGTH_SHORT,
-        });
-      }
 
       const message = {
         sender: userName,

@@ -11,7 +11,7 @@ function JoinRoom({navigation, route}) {
   const {userName} = route.params;
   const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
-    const socket = io('http://192.168.77.246:5000');
+    const socket = io('http://192.168.64.246:5000');
 
     setSocket(socket);
 
